@@ -1,0 +1,30 @@
+# Define the path
+$FolderPath = 'H:\RedirectedData\Desktop'
+
+# Get all the files and folders in the directory, including those in subdirectories
+$Items = Get-ChildItem -Path $FolderPath -Recurse
+
+# Separate files and folders
+$Files = $Items | Where-Object { -not $_.PSIsContainer }
+$Folders = $Items | Where-Object { $_.PSIsContainer }
+
+# Initialize total size to 0
+$TotalSize = 0
+
+# Iterate over each file and add its size to the total
+foreach ($File in $Files)
+{
+    $TotalSize += $File.Length
+}
+
+# Convert size to MB and round to two decimal places
+$TotalSizeMB = [Math]::Round($TotalSize / 1MB, 2)
+
+# Count files and folders
+$FileCount = $Files.Count
+$FolderCount = $Folders.Count
+
+# Output the results
+Write-Output "The total size of the file share is $TotalSizeMB MB."
+Write-Output "The total number of files is $FileCount."
+Write-Output "The total number of folders is $FolderCount."
