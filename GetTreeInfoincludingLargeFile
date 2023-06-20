@@ -1,0 +1,91 @@
+
+# Define variables
+$FolderPath = 'H:\RedirectedData\Desktop'
+$OutputPath = 'H:\RedirectedData\Desktop\output.html'
+
+# Get all items in the directory, including subdirectories
+$Items = Get-ChildItem -Path $FolderPath -Recurse
+
+# Get ACL for each item
+$ACLs = $Items | ForEach-Object {
+    $Path = $_.FullName
+    $ACL = Get-Acl -Path $Path
+    New-Object -TypeName PSObject -Property @{
+        Path = $Path
+        Owner = $ACL.Owner
+        Access = $ACL.AccessToString
+    }
+}
+
+
+# Get folder tree structure
+$TreeStructure = Get-ChildItem -Path $FolderPath -Recurse -Directory |
+                Select-Object FullName |
+                ConvertTo-Html -Fragment
+
+# Get folder properties
+$Properties = Get-ItemProperty -Path $FolderPath
+
+# Get largest files
+$LargestFiles = Get-ChildItem -Path $FolderPath -Recurse -File |
+                Sort-Object -Property Length -Descending |
+                Select-Object FullName, @{Name='SizeInMB';Expression={"{0:N2}" -f ($_.Length / 1MB)}} |
+                Select-Object -First 10 |
+                ConvertTo-Html -Fragment
+
+# Get ACL for each item
+$ACLs = Get-ChildItem -Path $FolderPath -Recurse | ForEach-Object {
+    $Path = $_.FullName
+    $ACL = Get-Acl -Path $Path
+    New-Object -TypeName PSObject -Property @{
+        Path = $Path
+        Owner = $ACL.Owner
+        Access = $ACL.AccessToString
+    }
+} | ConvertTo-Html -Fragment
+
+# Create an HTML report
+$Report = @"
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+    font-family: Arial, sans-serif;
+}
+
+h2 {
+    color: darkblue;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    border: 1px solid black;
+    padding: 8px;
+    text-align: left;
+}
+
+tr:nth-child(even) {
+    background-color: #dddddd;
+}
+</style>
+</head>
+<body>
+<h2>Folder Tree Structure</h2>
+<table>$TreeStructure</table>
+<h2>Folder Properties</h2>
+<pre>$Properties</pre>
+<h2>Largest Files</h2>
+<table>$LargestFiles</table>
+<h2>ACL Information</h2>
+<table>$ACLs</table>
+</body>
+</html>
+"@
+
+# Write the report to a file
+Set-Content -Path $OutputPath -Value $Report
